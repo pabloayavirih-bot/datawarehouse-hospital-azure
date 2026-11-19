@@ -1,0 +1,57 @@
+{
+	"name": "DF_Gold_ServicioCargo",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Billing",
+						"type": "DatasetReference"
+					},
+					"name": "SRCServicioCargo"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_ServicioCargo",
+						"type": "DatasetReference"
+					},
+					"name": "SNKGoldServicioCargo"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          tipo_cargo as string,",
+				"          estado_pago as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT DISTINCT\\n    LTRIM(RTRIM(charge_type)) AS tipo_cargo,\\n    LTRIM(RTRIM(payment_status)) AS estado_pago\\nFROM silver.billing\\n',",
+				"     format: 'query') ~> SRCServicioCargo",
+				"SRCServicioCargo sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          servicio_cargo_key as integer,",
+				"          tipo_cargo as string,",
+				"          estado_pago as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          tipo_cargo,",
+				"          estado_pago",
+				"     )) ~> SNKGoldServicioCargo"
+			]
+		}
+	}
+}
