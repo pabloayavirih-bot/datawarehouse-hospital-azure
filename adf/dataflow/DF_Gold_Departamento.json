@@ -1,0 +1,54 @@
+{
+	"name": "DF_Gold_Departamento",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Admissions",
+						"type": "DatasetReference"
+					},
+					"name": "SRCDepartamentos"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_Departamento",
+						"type": "DatasetReference"
+					},
+					"name": "SNKGoldDepartamento"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          nombre_departamento as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT DISTINCT\\n    LTRIM(RTRIM(department)) AS nombre_departamento\\nFROM silver.admissions\\nWHERE NULLIF(LTRIM(RTRIM(department)), \\'\\') IS NOT NULL\\n',",
+				"     format: 'query') ~> SRCDepartamentos",
+				"SRCDepartamentos sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          departamento_key as integer,",
+				"          nombre_departamento as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          nombre_departamento",
+				"     )) ~> SNKGoldDepartamento"
+			]
+		}
+	}
+}
