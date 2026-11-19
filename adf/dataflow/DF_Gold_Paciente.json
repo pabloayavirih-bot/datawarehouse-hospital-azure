@@ -1,0 +1,36 @@
+{
+	"name": "DF_Gold_Paciente",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Patients",
+						"type": "DatasetReference"
+					},
+					"name": "SRCPacientesGold"
+				}
+			],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          patient_id as integer,",
+				"          full_name as string,",
+				"          gender as string,",
+				"          date_of_birth as date,",
+				"          phone as string,",
+				"          email as string,",
+				"          address as string,",
+				"          insurance_provider as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT\\n    patient_id AS patient_id_bk,\\n    full_name AS nombre_completo,\\n    gender AS genero,\\n    date_of_birth AS fecha_nacimiento,\\n    email AS correo_electronico,\\n    address AS direccion,\\n    insurance_provider AS proveedor_seguro\\nFROM silver.patients\\n',",
+				"     format: 'query') ~> SRCPacientesGold"
+			]
+		}
+	}
+}
