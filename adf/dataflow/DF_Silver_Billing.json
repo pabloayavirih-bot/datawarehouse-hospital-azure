@@ -43,7 +43,7 @@
 				"     format: 'query') ~> SRCBronzeBilling",
 				"SRCBronzeBilling derive(billing_id = toInteger(trim(billing_id)),",
 				"          admission_id = toInteger(trim(admission_id)),",
-				"          charge_type = trim(charge_type),",
+				"          charge_type =  iif(     trim(iifNull(charge_type, '')) == '',     'No especificado',     trim(charge_type) ),",
 				"          payment_status = trim(payment_status),",
 				"          amount =  toDecimal(     trim(         replace(             replace(                 replace(upper(trim(amount)), 'USD', ''),                 '$',                 ''             ),             ',',             ''         )     ),     12,     2 ),",
 				"          payment_date =  case(     isNull(payment_date) || trim(payment_date) == '',         toDate(null()),      regexMatch(trim(payment_date), '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),         toDate(trim(payment_date), 'yyyy-MM-dd'),      regexMatch(trim(payment_date), '^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'),         toDate(trim(payment_date), 'dd-MMM-yyyy'),      regexMatch(trim(payment_date), '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'),         toDate(trim(payment_date), 'MM/dd/yyyy'),      regexMatch(trim(payment_date), '^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'),         toDate(trim(payment_date), 'MMMM dd, yyyy'),      regexMatch(trim(payment_date), '^[0-9]{2}-[0-9]{2}-[0-9]{2}$'),         toDate(             concat(                 iif(toInteger(right(trim(payment_date), 2)) <= 26, '20', '19'),                 right(trim(payment_date), 2),                 '-',                 left(trim(payment_date), 2),                 '-',                 substring(trim(payment_date), 4, 2)             ),             'yyyy-MM-dd'         ),      toDate(null()) )) ~> DRVBilling",
@@ -64,7 +64,15 @@
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true,",
-				"     errorHandlingOption: 'stopOnFirstError') ~> SNKSilverBilling"
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          billing_id,",
+				"          admission_id,",
+				"          charge_type,",
+				"          amount,",
+				"          payment_status,",
+				"          payment_date",
+				"     )) ~> SNKSilverBilling"
 			]
 		}
 	}
