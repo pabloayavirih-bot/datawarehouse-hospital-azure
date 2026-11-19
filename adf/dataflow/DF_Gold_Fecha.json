@@ -1,0 +1,89 @@
+{
+	"name": "DF_Gold_Fecha",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Admissions",
+						"type": "DatasetReference"
+					},
+					"name": "SRCFechasGold"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_Fecha",
+						"type": "DatasetReference"
+					},
+					"name": "SNKGoldFecha"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          fecha_key as integer,",
+				"          fecha_completa as date,",
+				"          anio as integer,",
+				"          trimestre as integer,",
+				"          trimestre_nombre as string,",
+				"          mes as integer,",
+				"          mes_nombre as string,",
+				"          mes_corto as string,",
+				"          semana_anio as integer,",
+				"          dia_mes as integer,",
+				"          dia_semana as integer,",
+				"          dia_nombre as string,",
+				"          es_fin_de_semana as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT\\n    CAST(CONVERT(CHAR(8), f.fecha, 112) AS INT) AS fecha_key,\\n    f.fecha AS fecha_completa,\\n\\n    CAST(YEAR(f.fecha) AS INT) AS anio,\\n    CAST(DATEPART(QUARTER, f.fecha) AS TINYINT) AS trimestre,\\n    CONCAT(\\'T\\', DATEPART(QUARTER, f.fecha)) AS trimestre_nombre,\\n\\n    CAST(MONTH(f.fecha) AS TINYINT) AS mes,\\n    CHOOSE(\\n        MONTH(f.fecha),\\n        \\'Enero\\', \\'Febrero\\', \\'Marzo\\', \\'Abril\\',\\n        \\'Mayo\\', \\'Junio\\', \\'Julio\\', \\'Agosto\\',\\n        \\'Septiembre\\', \\'Octubre\\', \\'Noviembre\\', \\'Diciembre\\'\\n    ) AS mes_nombre,\\n\\n    CHOOSE(\\n        MONTH(f.fecha),\\n        \\'Ene\\', \\'Feb\\', \\'Mar\\', \\'Abr\\',\\n        \\'May\\', \\'Jun\\', \\'Jul\\', \\'Ago\\',\\n        \\'Sep\\', \\'Oct\\', \\'Nov\\', \\'Dic\\'\\n    ) AS mes_corto,\\n\\n    CAST(DATEPART(ISO_WEEK, f.fecha) AS TINYINT) AS semana_anio,\\n    CAST(DAY(f.fecha) AS TINYINT) AS dia_mes,\\n\\n    d.dia_iso AS dia_semana,\\n    CHOOSE(\\n        d.dia_iso,\\n        \\'Lunes\\', \\'Martes\\', \\'Miércoles\\',\\n        \\'Jueves\\', \\'Viernes\\', \\'Sábado\\', \\'Domingo\\'\\n    ) AS dia_nombre,\\n\\n    CAST(\\n        CASE WHEN d.dia_iso IN (6, 7)\\n            THEN 1\\n            ELSE 0\\n        END AS BIT\\n    ) AS es_fin_de_semana\\n\\nFROM (\\n    SELECT admission_date AS fecha\\n    FROM silver.admissions\\n    WHERE admission_date IS NOT NULL\\n\\n    UNION\\n\\n    SELECT discharge_date AS fecha\\n    FROM silver.admissions\\n    WHERE discharge_date IS NOT NULL\\n\\n    UNION\\n\\n    SELECT payment_date AS fecha\\n    FROM silver.billing\\n    WHERE payment_date IS NOT NULL\\n) AS f\\n\\nCROSS APPLY (\\n    SELECT CAST(\\n        (DATEDIFF(DAY, \\'19000101\\', f.fecha) % 7) + 1\\n        AS TINYINT\\n    ) AS dia_iso\\n) AS d\\n',",
+				"     format: 'query') ~> SRCFechasGold",
+				"SRCFechasGold sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          fecha_key as integer,",
+				"          fecha_completa as date,",
+				"          anio as integer,",
+				"          trimestre as integer,",
+				"          trimestre_nombre as string,",
+				"          mes as integer,",
+				"          mes_nombre as string,",
+				"          mes_corto as string,",
+				"          semana_anio as integer,",
+				"          dia_mes as integer,",
+				"          dia_semana as integer,",
+				"          dia_nombre as string,",
+				"          es_fin_de_semana as boolean",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          fecha_key,",
+				"          fecha_completa,",
+				"          anio,",
+				"          trimestre,",
+				"          trimestre_nombre,",
+				"          mes,",
+				"          mes_nombre,",
+				"          mes_corto,",
+				"          semana_anio,",
+				"          dia_mes,",
+				"          dia_semana,",
+				"          dia_nombre,",
+				"          es_fin_de_semana",
+				"     )) ~> SNKGoldFecha"
+			]
+		}
+	}
+}
