@@ -13,7 +13,11 @@
 				}
 			],
 			"sinks": [],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "DRVBilling"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          billing_id as string,",
@@ -27,7 +31,11 @@
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
 				"     query: '\\nSELECT b.*\\nFROM bronze.billing b\\nWHERE EXISTS (\\n    SELECT 1\\n    FROM silver.admissions a\\n    WHERE a.admission_id = TRY_CONVERT(INT, b.admission_id)\\n)\\n',",
-				"     format: 'query') ~> SRCBronzeBilling"
+				"     format: 'query') ~> SRCBronzeBilling",
+				"SRCBronzeBilling derive(billing_id = toInteger(trim(billing_id)),",
+				"          admission_id = toInteger(trim(admission_id)),",
+				"          charge_type = trim(charge_type),",
+				"          payment_status = trim(payment_status)) ~> DRVBilling"
 			]
 		}
 	}
