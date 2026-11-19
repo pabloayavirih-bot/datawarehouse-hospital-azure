@@ -12,8 +12,20 @@
 					"name": "SRCBronzeDiagnoses"
 				}
 			],
-			"sinks": [],
-			"transformations": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Diagnoses",
+						"type": "DatasetReference"
+					},
+					"name": "SNKSilverDiagnoses"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DRVDiagnoses"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          diagnosis_id as string,",
@@ -25,7 +37,37 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> SRCBronzeDiagnoses"
+				"     query: '\\nSELECT d.*\\nFROM bronze.diagnoses d\\nWHERE EXISTS (\\n    SELECT 1\\n    FROM silver.admissions a\\n    WHERE a.admission_id = TRY_CONVERT(INT, d.admission_id)\\n)\\n',",
+				"     format: 'query') ~> SRCBronzeDiagnoses",
+				"SRCBronzeDiagnoses derive(diagnosis_id = toInteger(trim(diagnosis_id)),",
+				"          admission_id = toInteger(trim(admission_id)),",
+				"          icd_code = trim(icd_code),",
+				"          diagnosis_description = trim(diagnosis_description),",
+				"          severity =  case(     lower(trim(severity)) == 'mild', 'Mild',     lower(trim(severity)) == 'moderate', 'Moderate',     lower(trim(severity)) == 'severe', 'Severe',     lower(trim(severity)) == 'critical', 'Critical',     severity )) ~> DRVDiagnoses",
+				"DRVDiagnoses sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          diagnosis_id as integer,",
+				"          admission_id as integer,",
+				"          icd_code as string,",
+				"          diagnosis_description as string,",
+				"          severity as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          diagnosis_id,",
+				"          admission_id,",
+				"          icd_code,",
+				"          diagnosis_description,",
+				"          severity",
+				"     )) ~> SNKSilverDiagnoses"
 			]
 		}
 	}
