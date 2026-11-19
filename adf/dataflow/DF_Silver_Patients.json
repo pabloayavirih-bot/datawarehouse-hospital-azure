@@ -1,0 +1,46 @@
+{
+	"name": "DF_Silver_Patients",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Bronze_Patients",
+						"type": "DatasetReference"
+					},
+					"name": "SRCBronzePatients"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "DRVPatients"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          patient_id as string,",
+				"          full_name as string,",
+				"          gender as string,",
+				"          date_of_birth as string,",
+				"          phone as string,",
+				"          email as string,",
+				"          address as string,",
+				"          insurance_provider as string",
+				"     ),",
+				"     allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SRCBronzePatients",
+				"SRCBronzePatients derive(patient_id = toInteger(trim(patient_id)),",
+				"          full_name = trim(full_name),",
+				"          email = lower(trim(email)),",
+				"          phone = trim(phone),",
+				"          address = trim(address),",
+				"          gender =  case(     in(['m', 'male'], lower(trim(gender))), 'Male',     in(['f', 'female'], lower(trim(gender))), 'Female',     'Unknown' ),",
+				"          insurance_provider =  case(     isNull(insurance_provider) || trim(insurance_provider) == '', 'No especificado',     in(['medicaid'], lower(trim(insurance_provider))), 'Medicaid',     in(['medicare', 'medi-care'], lower(trim(insurance_provider))), 'Medicare',     in(['cigna', 'cigna health'], lower(trim(insurance_provider))), 'Cigna',     in(['aetna', 'aetna inc.', 'aetnaa'], lower(trim(insurance_provider))), 'Aetna',     in(['bluecross', 'blue cross', 'blue-cross'], lower(trim(insurance_provider))), 'Blue Cross',     in(['unitedhealth', 'united health', 'uhc'], lower(trim(insurance_provider))), 'UnitedHealth',     in(['self pay', 'self-pay'], lower(trim(insurance_provider))), 'Self-Pay',     trim(insurance_provider) )) ~> DRVPatients"
+			]
+		}
+	}
+}
