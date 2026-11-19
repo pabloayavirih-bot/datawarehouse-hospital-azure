@@ -1,0 +1,34 @@
+{
+	"name": "DS_Gold_Diagnostico",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQL_Hospital",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "diagnostico_key",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "codigo_icd",
+				"type": "varchar"
+			},
+			{
+				"name": "descripcion_patologia",
+				"type": "nvarchar"
+			},
+			{
+				"name": "nivel_severidad",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "gold",
+			"table": "dim_diagnostico"
+		}
+	}
+}
