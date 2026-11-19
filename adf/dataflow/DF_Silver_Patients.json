@@ -12,7 +12,15 @@
 					"name": "SRCBronzePatients"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Patients",
+						"type": "DatasetReference"
+					},
+					"name": "SNKSilverPatients"
+				}
+			],
 			"transformations": [
 				{
 					"name": "DRVPatients"
@@ -40,7 +48,37 @@
 				"          address = trim(address),",
 				"          gender =  case(     in(['m', 'male'], lower(trim(gender))), 'Male',     in(['f', 'female'], lower(trim(gender))), 'Female',     'Unknown' ),",
 				"          insurance_provider =  case(     isNull(insurance_provider) || in(['', 'n/a', 'none'], lower(trim(insurance_provider))), 'No especificado',     in(['medicaid'], lower(trim(insurance_provider))), 'Medicaid',     in(['medicare', 'medi-care'], lower(trim(insurance_provider))), 'Medicare',     in(['cigna', 'cigna health'], lower(trim(insurance_provider))), 'Cigna',     in(['aetna', 'aetna inc.', 'aetnaa'], lower(trim(insurance_provider))), 'Aetna',     in(['bluecross', 'blue cross', 'blue-cross'], lower(trim(insurance_provider))), 'Blue Cross',     in(['unitedhealth', 'united health', 'uhc'], lower(trim(insurance_provider))), 'UnitedHealth',     in(['self pay', 'self-pay'], lower(trim(insurance_provider))), 'Self-Pay',     trim(insurance_provider) ),",
-				"          date_of_birth =  case(     isNull(date_of_birth) || trim(date_of_birth) == '',         toDate(null()),      regexMatch(trim(date_of_birth), '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),         toDate(trim(date_of_birth), 'yyyy-MM-dd'),      regexMatch(trim(date_of_birth), '^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'),         toDate(trim(date_of_birth), 'dd-MMM-yyyy'),      regexMatch(trim(date_of_birth), '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'),         toDate(trim(date_of_birth), 'MM/dd/yyyy'),      regexMatch(trim(date_of_birth), '^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'),         toDate(trim(date_of_birth), 'MMMM dd, yyyy'),      regexMatch(trim(date_of_birth), '^[0-9]{2}-[0-9]{2}-[0-9]{2}$'),         toDate(             concat(                 iif(toInteger(right(trim(date_of_birth), 2)) <= 26, '20', '19'),                 right(trim(date_of_birth), 2),                 '-',                 left(trim(date_of_birth), 2),                 '-',                 substring(trim(date_of_birth), 4, 2)             ),             'yyyy-MM-dd'         ),      toDate(null()) )) ~> DRVPatients"
+				"          date_of_birth =  case(     isNull(date_of_birth) || trim(date_of_birth) == '',         toDate(null()),      regexMatch(trim(date_of_birth), '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),         toDate(trim(date_of_birth), 'yyyy-MM-dd'),      regexMatch(trim(date_of_birth), '^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}$'),         toDate(trim(date_of_birth), 'dd-MMM-yyyy'),      regexMatch(trim(date_of_birth), '^[0-9]{2}/[0-9]{2}/[0-9]{4}$'),         toDate(trim(date_of_birth), 'MM/dd/yyyy'),      regexMatch(trim(date_of_birth), '^[A-Za-z]+ [0-9]{2}, [0-9]{4}$'),         toDate(trim(date_of_birth), 'MMMM dd, yyyy'),      regexMatch(trim(date_of_birth), '^[0-9]{2}-[0-9]{2}-[0-9]{2}$'),         toDate(             concat(                 iif(toInteger(right(trim(date_of_birth), 2)) <= 26, '20', '19'),                 right(trim(date_of_birth), 2),                 '-',                 left(trim(date_of_birth), 2),                 '-',                 substring(trim(date_of_birth), 4, 2)             ),             'yyyy-MM-dd'         ),      toDate(null()) )) ~> DRVPatients",
+				"DRVPatients sink(allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     input(",
+				"          patient_id as integer,",
+				"          full_name as string,",
+				"          gender as string,",
+				"          date_of_birth as date,",
+				"          phone as string,",
+				"          email as string,",
+				"          address as string,",
+				"          insurance_provider as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          patient_id,",
+				"          full_name,",
+				"          gender,",
+				"          date_of_birth,",
+				"          phone,",
+				"          email,",
+				"          address,",
+				"          insurance_provider",
+				"     )) ~> SNKSilverPatients"
 			]
 		}
 	}
