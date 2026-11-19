@@ -30,7 +30,7 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     query: '\\nSELECT DISTINCT\\n    LTRIM(RTRIM(charge_type)) AS tipo_cargo,\\n    LTRIM(RTRIM(payment_status)) AS estado_pago\\nFROM silver.billing\\n',",
+				"     query: '\\nSELECT DISTINCT\\n    LTRIM(RTRIM(charge_type)) AS tipo_cargo,\\n    UPPER(LTRIM(RTRIM(payment_status))) AS estado_pago\\nFROM silver.billing\\n',",
 				"     format: 'query') ~> SRCServicioCargo",
 				"SRCServicioCargo sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
