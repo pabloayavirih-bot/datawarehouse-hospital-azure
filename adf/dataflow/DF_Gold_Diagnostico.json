@@ -1,0 +1,60 @@
+{
+	"name": "DF_Gold_Diagnostico",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Diagnoses",
+						"type": "DatasetReference"
+					},
+					"name": "SRCDiagnosticosGold"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_Diagnostico",
+						"type": "DatasetReference"
+					},
+					"name": "SNKGoldDiagnostico"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          codigo_icd as string,",
+				"          descripcion_patologia as string,",
+				"          nivel_severidad as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT DISTINCT\\n    LTRIM(RTRIM(icd_code)) AS codigo_icd,\\n    diagnosis_description AS descripcion_patologia,\\n    ISNULL(severity, \\'No especificado\\') AS nivel_severidad\\nFROM silver.diagnoses\\n',",
+				"     format: 'query') ~> SRCDiagnosticosGold",
+				"SRCDiagnosticosGold sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          diagnostico_key as integer,",
+				"          codigo_icd as string,",
+				"          descripcion_patologia as string,",
+				"          nivel_severidad as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          codigo_icd,",
+				"          descripcion_patologia,",
+				"          nivel_severidad",
+				"     )) ~> SNKGoldDiagnostico"
+			]
+		}
+	}
+}
