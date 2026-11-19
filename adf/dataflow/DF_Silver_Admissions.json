@@ -13,7 +13,11 @@
 				}
 			],
 			"sinks": [],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "DRVAdmissions"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          admission_id as string,",
@@ -26,7 +30,12 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> SRCBronzeAdmissions"
+				"     query: '\\nSELECT a.*\\nFROM bronze.admissions a\\nWHERE EXISTS (\\n    SELECT 1\\n    FROM silver.patients p\\n    WHERE p.patient_id = TRY_CONVERT(INT, a.patient_id)\\n)\\nAND NULLIF(LTRIM(RTRIM(a.admission_date)), \\'\\') IS NOT NULL\\n',",
+				"     format: 'query') ~> SRCBronzeAdmissions",
+				"SRCBronzeAdmissions derive(admission_id = toInteger(trim(admission_id)),",
+				"          patient_id = toInteger(trim(patient_id)),",
+				"          attending_doctor_id = toInteger(trim(attending_doctor_id)),",
+				"          department =  case(     in(['cardio', 'cardiolgy', 'cardiology'], lower(trim(department))), 'Cardiology',     in(['onco', 'oncology', 'oncologyy'], lower(trim(department))), 'Oncology',     in(['neuro', 'neurology', 'nuerology'], lower(trim(department))), 'Neurology',     in(['emergancy', 'emergency', 'er'], lower(trim(department))), 'Emergency',     in(['gen surg', 'general surgery', 'generalsurgery'], lower(trim(department))), 'General Surgery',     in(['ortho', 'orthopaedics', 'orthopedics'], lower(trim(department))), 'Orthopedics',     in(['paediatrics', 'pediatrics', 'peds'], lower(trim(department))), 'Pediatrics',     trim(department) )) ~> DRVAdmissions"
 			]
 		}
 	}
