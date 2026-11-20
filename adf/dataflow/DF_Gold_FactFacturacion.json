@@ -1,0 +1,75 @@
+{
+	"name": "DF_Gold_FactFacturacion",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Billing",
+						"type": "DatasetReference"
+					},
+					"name": "SRCFacturacionGold"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_FactFacturacion",
+						"type": "DatasetReference"
+					},
+					"name": "SNKGoldFactFacturacion"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          billing_id_bk as integer,",
+				"          admission_id_bk as integer,",
+				"          paciente_key as integer,",
+				"          departamento_key as integer,",
+				"          servicio_cargo_key as integer,",
+				"          fecha_pago_key as integer,",
+				"          monto_facturado as decimal(12,2),",
+				"          conteo_transacciones as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT\\n    b.billing_id AS billing_id_bk,\\n    b.admission_id AS admission_id_bk,\\n\\n    p.paciente_key,\\n    dep.departamento_key,\\n    s.servicio_cargo_key,\\n\\n    f.fecha_key AS fecha_pago_key,\\n\\n    b.amount AS monto_facturado,\\n\\n    CAST(1 AS INT) AS conteo_transacciones\\n\\nFROM silver.billing b\\n\\nINNER JOIN silver.admissions a\\n    ON b.admission_id = a.admission_id\\n\\nINNER JOIN gold.dim_paciente p\\n    ON a.patient_id = p.patient_id_bk\\n\\nINNER JOIN gold.dim_departamento dep\\n    ON a.department = dep.nombre_departamento\\n\\nINNER JOIN gold.dim_servicio_cargo s\\n    ON LTRIM(RTRIM(b.charge_type)) = s.tipo_cargo\\n    AND UPPER(LTRIM(RTRIM(b.payment_status))) = s.estado_pago\\n\\nLEFT JOIN gold.dim_fecha f\\n    ON b.payment_date = f.fecha_completa\\n',",
+				"     format: 'query') ~> SRCFacturacionGold",
+				"SRCFacturacionGold sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          facturacion_key as long,",
+				"          billing_id_bk as integer,",
+				"          admission_id_bk as integer,",
+				"          paciente_key as integer,",
+				"          departamento_key as integer,",
+				"          servicio_cargo_key as integer,",
+				"          fecha_pago_key as integer,",
+				"          monto_facturado as decimal(12,2),",
+				"          conteo_transacciones as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          billing_id_bk,",
+				"          admission_id_bk,",
+				"          paciente_key,",
+				"          departamento_key,",
+				"          servicio_cargo_key,",
+				"          fecha_pago_key,",
+				"          monto_facturado,",
+				"          conteo_transacciones",
+				"     )) ~> SNKGoldFactFacturacion"
+			]
+		}
+	}
+}
