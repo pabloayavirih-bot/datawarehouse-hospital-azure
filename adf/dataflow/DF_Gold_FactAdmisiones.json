@@ -1,0 +1,78 @@
+{
+	"name": "DF_Gold_FactAdmisiones",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Admissions",
+						"type": "DatasetReference"
+					},
+					"name": "SRCAdmisionesGold"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_FactAdmisiones",
+						"type": "DatasetReference"
+					},
+					"name": "SNKGoldFactAdmisiones"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          admission_id_bk as integer,",
+				"          paciente_key as integer,",
+				"          departamento_key as integer,",
+				"          diagnostico_key as integer,",
+				"          fecha_ingreso_key as integer,",
+				"          fecha_alta_key as integer,",
+				"          medico_id as integer,",
+				"          dias_estancia as integer,",
+				"          conteo_admisiones as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: '\\nSELECT\\n    a.admission_id AS admission_id_bk,\\n    p.paciente_key,\\n    dep.departamento_key,\\n\\n    CASE\\n        WHEN d.diagnosis_id IS NULL\\n            THEN sd.diagnostico_key\\n        ELSE gd.diagnostico_key\\n    END AS diagnostico_key,\\n\\n    fi.fecha_key AS fecha_ingreso_key,\\n    fa.fecha_key AS fecha_alta_key,\\n\\n    a.attending_doctor_id AS medico_id,\\n\\n    DATEDIFF(\\n        DAY,\\n        a.admission_date,\\n        a.discharge_date\\n    ) AS dias_estancia,\\n\\n    CAST(1 AS INT) AS conteo_admisiones\\n\\nFROM silver.admissions a\\n\\nINNER JOIN gold.dim_paciente p\\n    ON a.patient_id = p.patient_id_bk\\n\\nINNER JOIN gold.dim_departamento dep\\n    ON a.department = dep.nombre_departamento\\n\\nINNER JOIN gold.dim_fecha fi\\n    ON a.admission_date = fi.fecha_completa\\n\\nLEFT JOIN gold.dim_fecha fa\\n    ON a.discharge_date = fa.fecha_completa\\n\\nLEFT JOIN (\\n    SELECT\\n        diagnosis_id,\\n        admission_id,\\n        icd_code,\\n        diagnosis_description,\\n        severity,\\n        ROW_NUMBER() OVER (\\n            PARTITION BY admission_id\\n            ORDER BY diagnosis_id\\n        ) AS rn\\n    FROM silver.diagnoses\\n) d\\n    ON a.admission_id = d.admission_id\\n    AND d.rn = 1\\n\\nLEFT JOIN gold.dim_diagnostico gd\\n    ON gd.codigo_icd = LTRIM(RTRIM(d.icd_code))\\n    AND (\\n        gd.descripcion_patologia = d.diagnosis_description\\n        OR (\\n            gd.descripcion_patologia IS NULL\\n            AND d.diagnosis_description IS NULL\\n        )\\n    )\\n    AND gd.nivel_severidad =\\n        ISNULL(d.severity, \\'No especificado\\')\\n\\nCROSS JOIN (\\n    SELECT diagnostico_key\\n    FROM gold.dim_diagnostico\\n    WHERE codigo_icd = \\'SIN-DIAG\\'\\n) sd\\n',",
+				"     format: 'query') ~> SRCAdmisionesGold",
+				"SRCAdmisionesGold sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          admision_key as long,",
+				"          admission_id_bk as integer,",
+				"          paciente_key as integer,",
+				"          departamento_key as integer,",
+				"          diagnostico_key as integer,",
+				"          fecha_ingreso_key as integer,",
+				"          fecha_alta_key as integer,",
+				"          medico_id as integer,",
+				"          dias_estancia as integer,",
+				"          conteo_admisiones as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          admission_id_bk,",
+				"          paciente_key,",
+				"          departamento_key,",
+				"          diagnostico_key,",
+				"          fecha_ingreso_key,",
+				"          fecha_alta_key,",
+				"          medico_id,",
+				"          dias_estancia,",
+				"          conteo_admisiones",
+				"     )) ~> SNKGoldFactAdmisiones"
+			]
+		}
+	}
+}
